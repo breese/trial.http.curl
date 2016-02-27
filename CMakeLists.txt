@@ -16,6 +16,8 @@ set(TRIAL_HTTP_CURL_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(LIBRARY_OUTPUT_PATH ${TRIAL_HTTP_CURL_BUILD_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH ${TRIAL_HTTP_CURL_BUILD_DIR}/bin)
 
+#add_definitions(-Wall -Wextra -Wshadow)
+
 ###############################################################################
 # Boost package
 ###############################################################################

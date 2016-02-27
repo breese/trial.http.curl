@@ -24,12 +24,12 @@ namespace curl
 {
 
 inline socket::socket(boost::asio::io_service& io,
-                      const endpoint& remote_endpoint)
+                      const endpoint& remote)
     : basic_io_object<service_type>(io),
       real_socket(io),
       easy(0),
       multi(0),
-      remote_endpoint(remote_endpoint),
+      remote_endpoint(remote),
       timer(io)
 {
     current.state = state::done;
@@ -156,7 +156,7 @@ typename boost::asio::async_result<
     typename boost::asio::handler_type<CompletionToken,
                                        void(socket::error_code)>::type
     >::type
-socket::async_read_response(Message& message,
+socket::async_read_response(Message& msg,
                             BOOST_ASIO_MOVE_ARG(CompletionToken) token)
 {
     typedef typename boost::asio::handler_type<CompletionToken,
@@ -168,11 +168,11 @@ socket::async_read_response(Message& message,
     if (!current.storage.headers().empty())
     {
         // FIXME: move
-        message.headers() = current.storage.headers();
+        msg.headers() = current.storage.headers();
         current.storage.headers().clear();
         if (!current.storage.body().empty())
         {
-            message.body() = current.storage.body();
+            msg.body() = current.storage.body();
             current.storage.body().clear();
             error_code success;
             post_handler(success,
@@ -183,13 +183,13 @@ socket::async_read_response(Message& message,
 
     if (current.state == state::reading)
     {
-        current.message = &message;
+        current.message = &msg;
         if (perform())
         {
             switch (current.state)
             {
             case state::reading:
-                async_wait_readable(message,
+                async_wait_readable(msg,
                                     BOOST_ASIO_MOVE_CAST(handler_type)(handler));
                 break;
 
@@ -316,7 +316,7 @@ inline std::size_t socket::body(const view_type& view)
 }
 
 template <typename Message, typename ReadHandler>
-void socket::async_wait_readable(Message& message,
+void socket::async_wait_readable(Message& msg,
                                  BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
 {
     switch (current.state)
@@ -335,7 +335,7 @@ void socket::async_wait_readable(Message& message,
                                     boost::bind(&socket::process_read<Message, ReadHandler>,
                                                 this,
                                                 _1,
-                                                message,
+                                                msg,
                                                 handler));
         break;
 
@@ -350,7 +350,7 @@ void socket::async_wait_readable(Message& message,
 
 template <typename Message, typename ReadHandler>
 void socket::process_read(const error_code& error,
-                          Message& message,
+                          Message& msg,
                           BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
 {
     if (!is_open())
@@ -554,7 +554,7 @@ inline curl_socket_t socket::curl_open_callback(void *closure,
 }
 
 inline int socket::curl_close_callback(void *closure,
-                                       curl_socket_t item)
+                                       curl_socket_t)
 {
     assert(closure);
 
