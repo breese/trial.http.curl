@@ -15,21 +15,17 @@
 #include <trial/http/curl/message.hpp>
 #include <trial/http/curl/socket.hpp>
 
-void dump(const trial::http::curl::message& message)
+std::ostream& operator << (std::ostream& stream,
+                           const trial::http::curl::message& msg)
 {
-    for (trial::http::curl::message::headers_type::const_iterator it = message.headers().begin();
-         it != message.headers().end();
+    for (trial::http::curl::message::headers_type::const_iterator it = msg.headers().begin();
+         it != msg.headers().end();
          ++it)
     {
-        std::cout << it->first << ": " << it->second << std::endl;
+        stream << it->first << ": " << it->second;
     }
-    for (trial::http::curl::message::body_type::const_iterator it = message.body().begin();
-         it != message.body().end();
-         ++it)
-    {
-        std::cout << *it;
-    }
-    std::cout << std::endl;
+    stream.write(reinterpret_cast<const std::ostream::char_type*>(msg.body().data()),
+                 msg.body().size());
 }
 
 void download(boost::asio::io_service& io,
@@ -49,11 +45,11 @@ void download(boost::asio::io_service& io,
         std::cout << "error = " << error.message() << std::endl;
         if (error != boost::asio::error::in_progress)
             break;
-        dump(message);
+        std::cout << message;
     }
     if (!error)
     {
-        dump(message);
+        std::cout << message;
     }
 }
 
