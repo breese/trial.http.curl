@@ -133,7 +133,7 @@ private:
     struct
     {
         socket::state::value state;
-        int status_code;
+        long status_code;
         curl::message *message;
         curl::message storage;
     } current;
