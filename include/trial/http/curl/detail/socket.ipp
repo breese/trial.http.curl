@@ -23,13 +23,11 @@ namespace http
 namespace curl
 {
 
-inline socket::socket(boost::asio::io_service& io,
-                      const endpoint& remote)
+inline socket::socket(boost::asio::io_service& io)
     : basic_io_object<service_type>(io),
       real_socket(io),
       easy(0),
       multi(0),
-      remote_endpoint(remote),
       timer(io)
 {
     current.state = state::done;
@@ -81,7 +79,8 @@ typename boost::asio::async_result<
     typename boost::asio::handler_type<CompletionToken,
                                        void(socket::error_code)>::type
     >::type
-socket::async_write_get(BOOST_ASIO_MOVE_ARG(CompletionToken) token)
+socket::async_write_get(const endpoint& remote,
+                        BOOST_ASIO_MOVE_ARG(CompletionToken) token)
 {
     typedef typename boost::asio::handler_type<CompletionToken,
                                                void(error_code)>::type
@@ -97,7 +96,7 @@ socket::async_write_get(BOOST_ASIO_MOVE_ARG(CompletionToken) token)
         current.state = state::waiting;
 
         ::curl_easy_setopt(easy, CURLOPT_HTTPGET, 1L);
-        ::curl_easy_setopt(easy, CURLOPT_URL, remote_endpoint.url().c_str());
+        ::curl_easy_setopt(easy, CURLOPT_URL, remote.url().c_str());
 
         if (perform())
         {
@@ -118,7 +117,8 @@ typename boost::asio::async_result<
     typename boost::asio::handler_type<CompletionToken,
                                        void(socket::error_code)>::type
     >::type
-socket::async_write_head(BOOST_ASIO_MOVE_ARG(CompletionToken) token)
+socket::async_write_head(const endpoint& remote,
+                         BOOST_ASIO_MOVE_ARG(CompletionToken) token)
 {
     typedef typename boost::asio::handler_type<CompletionToken,
                                                void(error_code)>::type
@@ -135,7 +135,7 @@ socket::async_write_head(BOOST_ASIO_MOVE_ARG(CompletionToken) token)
 
         ::curl_easy_setopt(easy, CURLOPT_HEADER, 1L);
         ::curl_easy_setopt(easy, CURLOPT_NOBODY, 1L); 
-        ::curl_easy_setopt(easy, CURLOPT_URL, remote_endpoint.url().c_str());
+        ::curl_easy_setopt(easy, CURLOPT_URL, remote.url().c_str());
 
         if (perform())
         {

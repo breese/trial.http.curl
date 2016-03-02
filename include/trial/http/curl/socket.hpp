@@ -42,7 +42,7 @@ class socket
     typedef boost::string_ref view_type;
 
 public:
-    socket(boost::asio::io_service&, const endpoint&);
+    socket(boost::asio::io_service&);
     ~socket();
 
     // Send a HTTP GET request.
@@ -51,7 +51,8 @@ public:
         typename boost::asio::handler_type<CompletionToken,
                                            void(error_code)>::type
         >::type
-    async_write_get(BOOST_ASIO_MOVE_ARG(CompletionToken) token);
+    async_write_get(const endpoint&,
+                    BOOST_ASIO_MOVE_ARG(CompletionToken) token);
 
     // Send a HTTP HEAD request.
     template <typename CompletionToken>
@@ -59,7 +60,8 @@ public:
         typename boost::asio::handler_type<CompletionToken,
                                            void(error_code)>::type
         >::type
-    async_write_head(BOOST_ASIO_MOVE_ARG(CompletionToken) token);
+    async_write_head(const endpoint&,
+                     BOOST_ASIO_MOVE_ARG(CompletionToken) token);
 
     // Receive a HTTP response.
     //
@@ -117,7 +119,6 @@ private:
     boost::asio::ip::tcp::socket real_socket;
     CURL *easy;
     CURLM *multi;
-    endpoint remote_endpoint;
     boost::asio::steady_timer timer;
 
     struct state

@@ -32,9 +32,9 @@ void download(boost::asio::io_service& io,
               std::string url,
               boost::asio::yield_context yield)
 {
+    trial::http::curl::socket socket(io);
     trial::http::curl::endpoint endpoint(url);
-    trial::http::curl::socket socket(io, endpoint);
-    socket.async_write_get(yield);
+    socket.async_write_get(endpoint, yield);
 
     trial::http::curl::message message;
     boost::system::error_code error;
