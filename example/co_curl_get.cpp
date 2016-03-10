@@ -12,26 +12,16 @@
 #include <boost/bind.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/spawn.hpp>
+#include <boost/program_options.hpp>
 #include <trial/http/curl/message.hpp>
 #include <trial/http/curl/socket.hpp>
-
-std::ostream& operator << (std::ostream& stream,
-                           const trial::http::curl::message& msg)
-{
-    for (trial::http::curl::message::headers_type::const_iterator it = msg.headers().begin();
-         it != msg.headers().end();
-         ++it)
-    {
-        stream << it->first << ": " << it->second;
-    }
-    stream.write(reinterpret_cast<const std::ostream::char_type*>(msg.body().data()),
-                 msg.body().size());
-}
+#include "message_io.hpp"
 
 void download(boost::asio::io_service& io,
               std::string url,
               boost::asio::yield_context yield)
 {
+    try {
     trial::http::curl::socket socket(io);
     trial::http::curl::endpoint endpoint(url);
     socket.async_write_get(endpoint, yield);
@@ -51,18 +41,40 @@ void download(boost::asio::io_service& io,
     {
         std::cout << message;
     }
+    }
+    catch (const std::exception& ex)
+    {
+        std::cout << "Exception: " << ex.what() << std::endl;
+    }
+    catch (...)
+    {
+        std::cout << "Unknown exception" << std::endl;
+    }
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2)
+    namespace po = boost::program_options;
+    po::options_description description(argv[0]);
+    description.add_options()
+        ("help,h", "Show this help")
+        ("url", po::value<std::string>(), "URL");
+    po::positional_options_description position;
+    position.add("url", 1);
+    po::variables_map options;
+    po::store(po::command_line_parser(argc, argv).options(description).positional(position).run(),
+              options);
+    po::notify(options);
+
+    if (options.count("url") == 0)
     {
-        std::cerr << "Usage: " << argv[0] << " <url>" << std::endl;
+        std::cerr << description << std::endl;
         return 1;
     }
 
+    std::string url(options["url"].as<std::string>());
+
     boost::asio::io_service io;
-    std::string url(argv[1]);
     boost::asio::spawn(io,
                        boost::bind(download,
                                    boost::ref(io),

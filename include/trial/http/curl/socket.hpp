@@ -63,6 +63,16 @@ public:
     async_write_head(const endpoint&,
                      BOOST_ASIO_MOVE_ARG(CompletionToken) token);
 
+    // Send a HTTP PUT request.
+    template <typename Message, typename CompletionToken>
+    typename boost::asio::async_result<
+        typename boost::asio::handler_type<CompletionToken,
+                                           void(error_code)>::type
+        >::type
+    async_write_put(const Message&,
+                    const endpoint&,
+                    BOOST_ASIO_MOVE_ARG(CompletionToken) token);
+
     // Receive a HTTP response.
     //
     // The handler is called with:
@@ -85,8 +95,22 @@ public:
 private:
     static curl_socket_t curl_open_callback(void *, curlsocktype, struct curl_sockaddr *);
     static int curl_close_callback(void *, curl_socket_t);
-    static int curl_header_callback(char *, std::size_t, std::size_t, void *);
-    static int curl_download_callback(char *, std::size_t, std::size_t, void *);
+    static std::size_t curl_header_callback(char *, std::size_t, std::size_t, void *);
+    static std::size_t curl_download_callback(char *, std::size_t, std::size_t, void *);
+
+    template <typename WriteHandler>
+    void do_async_write_get(const endpoint&,
+                            const WriteHandler& handler);
+    template <typename WriteHandler>
+    void do_async_write_head(const endpoint&,
+                             const WriteHandler& handler);
+    template <typename Message, typename WriteHandler>
+    void do_async_write_put(const Message&,
+                            const endpoint&,
+                            const WriteHandler& handler);
+    template <typename Message, typename ReadHandler>
+    void do_async_read_response(Message&,
+                                const ReadHandler& handler);
 
     bool perform();
     void header(const view_type& key, const view_type& value);
@@ -109,11 +133,11 @@ private:
                       BOOST_ASIO_MOVE_ARG(ReadHandler) handler);
 
     template <typename Handler>
-    void post_handler(const error_code& error,
-                      BOOST_ASIO_MOVE_ARG(Handler) handler);
+    void post_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
+                      const error_code& error);
     template <typename Handler>
-    void dispatch_handler(const error_code& error,
-                          Handler handler);
+    void invoke_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
+                        const error_code& error);
 
 private:
     boost::asio::ip::tcp::socket real_socket;
@@ -137,6 +161,9 @@ private:
         long status_code;
         curl::message *message;
         curl::message storage;
+        struct curl_slist *header;
+        curl::message::body_type::const_iterator position;
+        curl::message::body_type::const_iterator ending;
     } current;
 };
 
