@@ -158,6 +158,7 @@ private:
     struct
     {
         socket::state::value state;
+        error_code code;
         long status_code;
         curl::message *message;
         curl::message storage;

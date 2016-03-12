@@ -18,6 +18,7 @@
 #include <boost/asio/handler_invoke_hook.hpp>
 #include <trial/http/curl/detail/service.hpp>
 #include <trial/http/curl/error.hpp>
+#include <trial/http/curl/status.hpp>
 
 #if defined(TRIAL_HTTP_CURL_DEBUG)
 #include <iostream>
@@ -32,6 +33,63 @@ namespace http
 {
 namespace curl
 {
+
+boost::system::error_code make_error_code(CURLcode code)
+{
+    using namespace boost;
+    switch (code)
+    {
+    case CURLE_OK:
+        return error::make_error_code();
+    case CURLE_UNSUPPORTED_PROTOCOL:
+        return system::errc::make_error_code(system::errc::protocol_not_supported);
+    case CURLE_COULDNT_RESOLVE_PROXY:
+    case CURLE_COULDNT_RESOLVE_HOST:
+        return asio::error::make_error_code(asio::error::host_not_found);
+    case CURLE_COULDNT_CONNECT:
+        return system::errc::make_error_code(system::errc::connection_refused);
+    case CURLE_OUT_OF_MEMORY:
+        return system::errc::make_error_code(system::errc::not_enough_memory);
+    case CURLE_ABORTED_BY_CALLBACK:
+        return asio::error::make_error_code(asio::error::operation_aborted);
+    case CURLE_RECV_ERROR:
+    case CURLE_SEND_ERROR:
+        return system::errc::make_error_code(system::errc::broken_pipe);
+    default:
+        return error::make_error_code(error::unknown);
+    }
+}
+
+struct status_code_type
+{
+    explicit status_code_type(int value) : value(value) {}
+    int value;
+};
+boost::system::error_code make_error_code(status_code_type code)
+{
+    switch (code.value)
+    {
+    case 0:
+    case 200:
+    case 201:
+    case 202:
+        return error::make_error_code();
+    case 302:
+        return status::make_error_code(status::redirect_found);
+    case 400:
+        return status::make_error_code(status::bad_request);
+    case 401:
+        return status::make_error_code(status::unauthorized);
+    case 403:
+        return status::make_error_code(status::forbidden);
+    case 404:
+        return status::make_error_code(status::not_found);
+    case 405:
+        return status::make_error_code(status::method_not_allowed);
+    default:
+        return error::make_error_code(error::unknown);
+    }
+}
 
 inline socket::socket(boost::asio::io_service& io)
     : basic_io_object<service_type>(io),
@@ -48,14 +106,14 @@ inline socket::socket(boost::asio::io_service& io)
     easy = ::curl_easy_init();
     if (!easy)
     {
-        throw curl::error(boost::system::errc::make_error_code(boost::system::errc::bad_file_descriptor));
+        throw curl::exception(boost::system::errc::make_error_code(boost::system::errc::bad_file_descriptor));
     }
     // FIXME: Move multi handle to service
     multi = ::curl_multi_init();
     if (!multi)
     {
         ::curl_easy_cleanup(easy);
-        throw curl::error(boost::system::errc::make_error_code(boost::system::errc::bad_file_descriptor));
+        throw curl::exception(boost::system::errc::make_error_code(boost::system::errc::bad_file_descriptor));
     }
 
     ::curl_easy_setopt(easy, CURLOPT_OPENSOCKETFUNCTION, &socket::curl_open_callback);
@@ -135,7 +193,7 @@ void socket::do_async_write_get(const endpoint& remote,
     else
     {
         invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
-                       curl::make_error_code(curl::invalid_state));
+                       error::make_error_code(curl::error::invalid_state));
     }
     TRIAL_HTTP_CURL_LOG("do_async_write_get done");
 }
@@ -192,7 +250,7 @@ void socket::do_async_write_head(const endpoint& remote,
     else
     {
         invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
-                       curl::make_error_code(curl::invalid_state));
+                       error::make_error_code(curl::error::invalid_state));
     }
 }
 
@@ -267,7 +325,7 @@ void socket::do_async_write_put(const Message& msg,
     else
     {
         invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
-                       curl::make_error_code(curl::invalid_state));
+                       error::make_error_code(curl::error::invalid_state));
     }
 }
 
@@ -355,7 +413,7 @@ void socket::do_async_read_response(Message& msg,
     else
     {
         invoke_handler(BOOST_ASIO_MOVE_CAST(ReadHandler)(handler),
-                       curl::make_error_code(curl::invalid_state));
+                       error::make_error_code(curl::error::invalid_state));
     }
 }
 
@@ -388,6 +446,7 @@ inline bool socket::perform()
     {
         mcode = ::curl_multi_perform(multi, &running_handles);
     } while (mcode == CURLM_CALL_MULTI_PERFORM);
+    TRIAL_HTTP_CURL_LOG("perform: " << mcode);
 
     const bool keep_running = (running_handles > 0);
     if (keep_running)
@@ -425,6 +484,8 @@ inline bool socket::perform()
         if (info && (info->msg == CURLMSG_DONE))
         {
             current.state = state::done;
+            current.code = make_error_code(info->data.result);
+            TRIAL_HTTP_CURL_LOG("perform: " << current.code.message());
         }
         // FIXME: else call handler with error
     }
@@ -445,10 +506,6 @@ inline void socket::header(const view_type& key,
     {
         buffer.headers().emplace(std::string(key.data(), key.size()),
                                  std::string(value.data(), value.size()));
-        if (current.status_code == 0)
-        {
-            ::curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &current.status_code);
-        }
     }
 }
 
@@ -669,8 +726,24 @@ template <typename Handler>
 void socket::invoke_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
                             const error_code& error)
 {
+    error_code code = error;
+    if (!error)
+    {
+        if (current.code)
+        {
+            code = current.code;
+        }
+        else
+        {
+            CURLcode rc = ::curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &current.status_code);
+            if (rc == CURLE_OK)
+            {
+                code = make_error_code(status_code_type(current.status_code));
+            }
+        }
+    }
     using boost::asio::asio_handler_invoke;
-    asio_handler_invoke(boost::bind<void>(handler, error), &handler);
+    asio_handler_invoke(boost::bind<void>(handler, code), &handler);
 }
 
 inline curl_socket_t socket::curl_open_callback(void *closure,

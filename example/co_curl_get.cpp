@@ -21,34 +21,30 @@ void download(boost::asio::io_service& io,
               std::string url,
               boost::asio::yield_context yield)
 {
-    try {
+    boost::system::error_code error;
     trial::http::curl::socket socket(io);
     trial::http::curl::endpoint endpoint(url);
-    socket.async_write_get(endpoint, yield);
-
-    trial::http::curl::message message;
-    boost::system::error_code error;
-    while (socket.is_open())
+    socket.async_write_get(endpoint, yield[error]);
+    if (error)
     {
-        socket.async_read_response(message, yield[error]);
-        std::cout << "status = " << socket.status_code() << std::endl;
-        std::cout << "error = " << error.message() << std::endl;
-        if (error != boost::asio::error::in_progress)
-            break;
-        std::cout << message;
+        std::cout << "status = " << error.message() << std::endl;
     }
-    if (!error)
+    else
     {
-        std::cout << message;
-    }
-    }
-    catch (const std::exception& ex)
-    {
-        std::cout << "Exception: " << ex.what() << std::endl;
-    }
-    catch (...)
-    {
-        std::cout << "Unknown exception" << std::endl;
+        trial::http::curl::message message;
+        while (socket.is_open())
+        {
+            socket.async_read_response(message, yield[error]);
+            std::cout << "status = " << socket.status_code() << std::endl;
+            std::cout << "error = " << error.message() << std::endl;
+            if (error != boost::asio::error::in_progress)
+                break;
+            std::cout << message;
+        }
+        if (!error)
+        {
+            std::cout << message;
+        }
     }
 }
 

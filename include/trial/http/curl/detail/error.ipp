@@ -26,14 +26,16 @@ class error_category : public boost::system::error_category
 public:
     const char *name() const BOOST_SYSTEM_NOEXCEPT
     {
-        return "trial.http.curl";
+        return "trial.http.curl.error";
     }
 
     std::string message(int value) const
     {
         switch (value)
         {
-        case invalid_state:
+        case error::unknown:
+            return "unknown";
+        case error::invalid_state:
             return "invalid state";
         }
         return "trial.http.curl error";
@@ -42,10 +44,16 @@ public:
 
 } // namespace detail
 
-inline const boost::system::error_category& error_category()
+inline const boost::system::error_category& error::category()
 {
     static detail::error_category instance;
     return instance;
+}
+
+inline boost::system::error_code error::make_error_code(error::value e)
+{
+    return boost::system::error_code(static_cast<int>(e),
+                                     curl::error::category());
 }
 
 } // namespace curl
