@@ -90,7 +90,6 @@ public:
                         BOOST_ASIO_MOVE_ARG(CompletionToken) token);
 
     bool is_open() const;
-    int status_code() const;
 
 private:
     static curl_socket_t curl_open_callback(void *, curlsocktype, struct curl_sockaddr *);
@@ -159,7 +158,6 @@ private:
     {
         socket::state::value state;
         error_code code;
-        long status_code;
         curl::message *message;
         curl::message storage;
         struct curl_slist *header;

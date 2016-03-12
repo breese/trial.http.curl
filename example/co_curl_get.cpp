@@ -27,7 +27,7 @@ void download(boost::asio::io_service& io,
     socket.async_write_get(endpoint, yield[error]);
     if (error)
     {
-        std::cout << "status = " << error.message() << std::endl;
+        std::cout << "error = " << error.message() << std::endl;
     }
     else
     {
@@ -35,8 +35,10 @@ void download(boost::asio::io_service& io,
         while (socket.is_open())
         {
             socket.async_read_response(message, yield[error]);
-            std::cout << "status = " << socket.status_code() << std::endl;
-            std::cout << "error = " << error.message() << std::endl;
+            if (error)
+            {
+                std::cout << "error = " << error.message() << std::endl;
+            }
             if (error != boost::asio::error::in_progress)
                 break;
             std::cout << message;

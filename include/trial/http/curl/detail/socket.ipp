@@ -99,7 +99,6 @@ inline socket::socket(boost::asio::io_service& io)
       timer(io)
 {
     current.state = state::done;
-    current.status_code = 0;
     current.message = 0;
     current.header = 0;
 
@@ -178,7 +177,6 @@ void socket::do_async_write_get(const endpoint& remote,
     TRIAL_HTTP_CURL_LOG("do_async_write_get");
 
     current.storage.clear();
-    current.status_code = 0;
 
     if (current.state == state::done)
     {
@@ -228,7 +226,6 @@ void socket::do_async_write_head(const endpoint& remote,
     TRIAL_HTTP_CURL_LOG("do_async_write_head");
 
     current.storage.clear();
-    current.status_code = 0;
 
     if (current.state == state::done)
     {
@@ -287,7 +284,6 @@ void socket::do_async_write_put(const Message& msg,
     TRIAL_HTTP_CURL_LOG("do_async_write_put");
 
     current.storage.clear();
-    current.status_code = 0;
     current.message = 0;
     current.position = msg.body().begin();
     current.ending = msg.body().end();
@@ -431,11 +427,6 @@ inline bool socket::is_open() const
             return true;
     }
     return real_socket.is_open();
-}
-
-inline int socket::status_code() const
-{
-    return current.status_code;
 }
 
 inline bool socket::perform()
@@ -738,10 +729,11 @@ void socket::invoke_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
         }
         else
         {
-            CURLcode rc = ::curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &current.status_code);
+            long status_code = 0L;
+            CURLcode rc = ::curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &status_code);
             if (rc == CURLE_OK)
             {
-                code = make_error_code(status_code_type(current.status_code));
+                code = make_error_code(status_code_type(status_code));
             }
         }
     }
