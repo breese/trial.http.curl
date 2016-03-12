@@ -732,6 +732,7 @@ void socket::invoke_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
         if (current.code)
         {
             code = current.code;
+            current.code.clear();
         }
         else
         {
