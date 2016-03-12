@@ -128,7 +128,9 @@ inline socket::socket(boost::asio::io_service& io)
     ::curl_easy_setopt(easy, CURLOPT_USERAGENT, "trial.http.curl/0.1");
     ::curl_easy_setopt(easy, CURLOPT_NOSIGNAL, 1L);
     ::curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+#if defined(TRIAL_HTTP_CURL_DEBUG)
     ::curl_easy_setopt(easy, CURLOPT_VERBOSE, 1L);
+#endif
 
     ::curl_multi_add_handle(multi, easy);
 }
