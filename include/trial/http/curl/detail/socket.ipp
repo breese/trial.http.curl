@@ -43,19 +43,38 @@ boost::system::error_code make_error_code(CURLcode code)
         return error::make_error_code();
     case CURLE_UNSUPPORTED_PROTOCOL:
         return system::errc::make_error_code(system::errc::protocol_not_supported);
+    case CURLE_FAILED_INIT:
+        return error::make_error_code(error::invalid_state);
+    case CURLE_URL_MALFORMAT:
+    case CURLE_BAD_FUNCTION_ARGUMENT:
+    case CURLE_UNKNOWN_OPTION:
+        return system::errc::make_error_code(system::errc::invalid_argument);
     case CURLE_COULDNT_RESOLVE_PROXY:
     case CURLE_COULDNT_RESOLVE_HOST:
         return asio::error::make_error_code(asio::error::host_not_found);
     case CURLE_COULDNT_CONNECT:
         return system::errc::make_error_code(system::errc::connection_refused);
+    case CURLE_REMOTE_ACCESS_DENIED:
+        return system::errc::make_error_code(system::errc::permission_denied);
+    case CURLE_PARTIAL_FILE:
+        return system::errc::make_error_code(system::errc::message_size);
     case CURLE_OUT_OF_MEMORY:
         return system::errc::make_error_code(system::errc::not_enough_memory);
+    case CURLE_OPERATION_TIMEDOUT:
     case CURLE_ABORTED_BY_CALLBACK:
         return asio::error::make_error_code(asio::error::operation_aborted);
+    case CURLE_BAD_DOWNLOAD_RESUME:
+        return system::errc::make_error_code(system::errc::bad_address);
     case CURLE_GOT_NOTHING:
+    case CURLE_READ_ERROR:
     case CURLE_RECV_ERROR:
     case CURLE_SEND_ERROR:
+    case CURLE_CHUNK_FAILED:
         return system::errc::make_error_code(system::errc::broken_pipe);
+    case CURLE_FILESIZE_EXCEEDED:
+        return system::errc::make_error_code(system::errc::value_too_large);
+    case CURLE_AGAIN:
+        return system::errc::make_error_code(system::errc::resource_unavailable_try_again);
     default:
         TRIAL_HTTP_CURL_LOG("Unknown CURLcode: " << code);
         return error::make_error_code(error::unknown);
