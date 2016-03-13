@@ -95,6 +95,14 @@ boost::system::error_code make_error_code(status_code_type code)
     case 201:
     case 202:
         return error::make_error_code();
+    case 203:
+        return status::make_error_code(status::non_authoritative_information);
+    case 204:
+        return status::make_error_code(status::no_content);
+    case 205:
+        return status::make_error_code(status::reset_content);
+    case 206:
+        return status::make_error_code(status::partial_content);
     case 301:
         return status::make_error_code(status::redirect_moved_permanently);
     case 302:
@@ -102,6 +110,8 @@ boost::system::error_code make_error_code(status_code_type code)
     case 400:
         return status::make_error_code(status::bad_request);
     case 401:
+        return status::make_error_code(status::payment_required);
+    case 402:
         return status::make_error_code(status::unauthorized);
     case 403:
         return status::make_error_code(status::forbidden);
@@ -109,6 +119,10 @@ boost::system::error_code make_error_code(status_code_type code)
         return status::make_error_code(status::not_found);
     case 405:
         return status::make_error_code(status::method_not_allowed);
+    case 406:
+        return status::make_error_code(status::not_acceptable);
+    case 411:
+        return status::make_error_code(status::length_required);
     default:
         TRIAL_HTTP_CURL_LOG("Unknown status code: " << code.value);
         return error::make_error_code(error::unknown);

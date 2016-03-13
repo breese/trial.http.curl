@@ -37,6 +37,14 @@ public:
             return "success";
         case status::continue_request:
             return "continue";
+        case status::non_authoritative_information:
+            return "non-authorative information";
+        case status::no_content:
+            return "no content";
+        case status::reset_content:
+            return "reset content";
+        case status::partial_content:
+            return "partial content";
         case status::redirect_moved_permanently:
             return "redirect moved permanently";
         case status::redirect_found:
@@ -45,12 +53,18 @@ public:
             return "bad request";
         case status::unauthorized:
             return "unauthorized";
+        case status::payment_required:
+            return "payment required";
         case status::forbidden:
             return "forbidden";
         case status::not_found:
             return "not found";
         case status::method_not_allowed:
             return "method not allowed";
+        case status::not_acceptable:
+            return "not acceptable";
+        case status::length_required:
+            return "length required";
         }
         return "trial.http.curl status";
     }

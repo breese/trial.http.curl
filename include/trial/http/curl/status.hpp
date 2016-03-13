@@ -29,16 +29,25 @@ struct status
         // Informational 1xx
         continue_request = 100,
 
+        // Successful 2xx
+        non_authoritative_information = 203,
+        no_content = 204,
+        reset_content = 205,
+        partial_content = 206,
+
         // Redirection 3xx
         redirect_moved_permanently = 301,
         redirect_found = 302,
 
         // Client 
         bad_request = 400,
-        unauthorized = 402,
+        unauthorized = 401,
+        payment_required = 402,
         forbidden = 403,
         not_found = 404,
-        method_not_allowed = 405
+        method_not_allowed = 405,
+        not_acceptable = 406,
+        length_required = 411
     };
 
     static const boost::system::error_category& category();
