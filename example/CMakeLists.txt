@@ -22,6 +22,13 @@ target_link_libraries(co_curl_get
   ${TRIAL_HTTP_CURL_EXAMPLE_LIBRARIES}
 )
 
+add_executable(co_curl_head
+  co_curl_head.cpp
+)
+target_link_libraries(co_curl_head
+  ${TRIAL_HTTP_CURL_EXAMPLE_LIBRARIES}
+)
+
 add_executable(co_curl_put
   co_curl_put.cpp
 )
@@ -42,6 +49,7 @@ target_link_libraries(co_curl_post
 
 add_custom_target(examples
   DEPENDS co_curl_get
+  DEPENDS co_curl_head
   DEPENDS co_curl_put
   DEPENDS co_curl_post
 )

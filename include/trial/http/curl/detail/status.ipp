@@ -37,6 +37,8 @@ public:
             return "success";
         case status::continue_request:
             return "continue";
+        case status::redirect_moved_permanently:
+            return "redirect moved permanently";
         case status::redirect_found:
             return "redirect found";
         case status::bad_request:

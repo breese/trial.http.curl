@@ -52,10 +52,12 @@ boost::system::error_code make_error_code(CURLcode code)
         return system::errc::make_error_code(system::errc::not_enough_memory);
     case CURLE_ABORTED_BY_CALLBACK:
         return asio::error::make_error_code(asio::error::operation_aborted);
+    case CURLE_GOT_NOTHING:
     case CURLE_RECV_ERROR:
     case CURLE_SEND_ERROR:
         return system::errc::make_error_code(system::errc::broken_pipe);
     default:
+        TRIAL_HTTP_CURL_LOG("Unknown CURLcode: " << code);
         return error::make_error_code(error::unknown);
     }
 }
@@ -74,6 +76,8 @@ boost::system::error_code make_error_code(status_code_type code)
     case 201:
     case 202:
         return error::make_error_code();
+    case 301:
+        return status::make_error_code(status::redirect_moved_permanently);
     case 302:
         return status::make_error_code(status::redirect_found);
     case 400:
@@ -87,6 +91,7 @@ boost::system::error_code make_error_code(status_code_type code)
     case 405:
         return status::make_error_code(status::method_not_allowed);
     default:
+        TRIAL_HTTP_CURL_LOG("Unknown status code: " << code.value);
         return error::make_error_code(error::unknown);
     }
 }
@@ -162,46 +167,13 @@ socket::async_write_get(const endpoint& remote,
 
     TRIAL_HTTP_CURL_LOG("async_write_get");
 
-    get_io_service().post(boost::bind(&socket::do_async_write_get<handler_type>,
+    get_io_service().post(boost::bind(&socket::do_async_write_custom<handler_type>,
                                       this,
+                                      "GET",
                                       remote,
                                       handler));
 
     return result.get();
-}
-
-template <typename WriteHandler>
-void socket::do_async_write_get(const endpoint& remote,
-                                const WriteHandler& handler)
-{
-    TRIAL_HTTP_CURL_LOG("do_async_write_get");
-
-    current.storage.clear();
-
-    if (current.state == state::done)
-    {
-        current.state = state::waiting;
-
-        ::curl_easy_setopt(easy, CURLOPT_HTTPGET, 1L);
-        ::curl_easy_setopt(easy, CURLOPT_URL, remote.url().c_str());
-
-        if (perform())
-        {
-            async_wait_writable(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
-        }
-        else
-        {
-            error_code success;
-            invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
-                           success);
-        }
-    }
-    else
-    {
-        invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
-                       error::make_error_code(curl::error::invalid_state));
-    }
-    TRIAL_HTTP_CURL_LOG("do_async_write_get done");
 }
 
 template <typename CompletionToken>
@@ -218,45 +190,12 @@ socket::async_write_head(const endpoint& remote,
     handler_type handler(BOOST_ASIO_MOVE_CAST(CompletionToken)(token));
     boost::asio::async_result<handler_type> result(handler);
 
-    get_io_service().post(boost::bind(&socket::do_async_write_head<handler_type>,
+    get_io_service().post(boost::bind(&socket::do_async_write_custom<handler_type>,
                                       this,
+                                      "HEAD",
                                       remote,
                                       handler));
     return result.get();
-}
-
-template <typename WriteHandler>
-void socket::do_async_write_head(const endpoint& remote,
-                                 const WriteHandler& handler)
-{
-    TRIAL_HTTP_CURL_LOG("do_async_write_head");
-
-    current.storage.clear();
-
-    if (current.state == state::done)
-    {
-        current.state = state::waiting;
-
-        ::curl_easy_setopt(easy, CURLOPT_HEADER, 1L);
-        ::curl_easy_setopt(easy, CURLOPT_NOBODY, 1L); 
-        ::curl_easy_setopt(easy, CURLOPT_URL, remote.url().c_str());
-
-        if (perform())
-        {
-            async_wait_writable(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
-        }
-        else
-        {
-            error_code success;
-            invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
-                           success);
-        }
-    }
-    else
-    {
-        invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
-                       error::make_error_code(curl::error::invalid_state));
-    }
 }
 
 template <typename Message, typename CompletionToken>
@@ -305,6 +244,44 @@ socket::async_write_post(const Message& msg,
                                       remote,
                                       handler));
     return result.get();
+}
+
+template <typename WriteHandler>
+void socket::do_async_write_custom(const std::string& method,
+                                   const endpoint& remote,
+                                   const WriteHandler& handler)
+{
+    TRIAL_HTTP_CURL_LOG("do_async_write_custom: " << method);
+
+    current.storage.clear();
+
+    if (current.state == state::done)
+    {
+        current.state = state::waiting;
+
+        ::curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method.c_str());
+        ::curl_easy_setopt(easy, CURLOPT_URL, remote.url().c_str());
+        if (method == "HEAD")
+        {
+            ::curl_easy_setopt(easy, CURLOPT_NOBODY, 1L);
+        }
+
+        if (perform())
+        {
+            async_wait_writable(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
+        }
+        else
+        {
+            error_code success;
+            invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
+                           success);
+        }
+    }
+    else
+    {
+        invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
+                       error::make_error_code(curl::error::invalid_state));
+    }
 }
 
 template <typename Message, typename WriteHandler>

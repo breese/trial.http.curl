@@ -30,6 +30,7 @@ struct status
         continue_request = 100,
 
         // Redirection 3xx
+        redirect_moved_permanently = 301,
         redirect_found = 302,
 
         // Client 

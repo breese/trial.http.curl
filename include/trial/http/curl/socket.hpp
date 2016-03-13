@@ -108,11 +108,9 @@ private:
     static std::size_t curl_download_callback(char *, std::size_t, std::size_t, void *);
 
     template <typename WriteHandler>
-    void do_async_write_get(const endpoint&,
-                            const WriteHandler& handler);
-    template <typename WriteHandler>
-    void do_async_write_head(const endpoint&,
-                             const WriteHandler& handler);
+    void do_async_write_custom(const std::string&,
+                               const endpoint&,
+                               const WriteHandler& handler);
     template <typename Message, typename WriteHandler>
     void do_async_write_custom(const std::string&,
                                const Message&,
