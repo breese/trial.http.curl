@@ -33,6 +33,8 @@ public:
     {
         switch (value)
         {
+        case error::success:
+            return "success";
         case error::unknown:
             return "unknown";
         case error::invalid_state:

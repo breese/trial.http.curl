@@ -189,6 +189,12 @@ void socket::do_async_write_get(const endpoint& remote,
         {
             async_wait_writable(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
         }
+        else
+        {
+            error_code success;
+            invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
+                           success);
+        }
     }
     else
     {
@@ -268,8 +274,33 @@ socket::async_write_put(const Message& msg,
     handler_type handler(BOOST_ASIO_MOVE_CAST(CompletionToken)(token));
     boost::asio::async_result<handler_type> result(handler);
 
-    get_io_service().post(boost::bind(&socket::do_async_write_put<Message, handler_type>,
+    get_io_service().post(boost::bind(&socket::do_async_write_custom<Message, handler_type>,
                                       this,
+                                      "PUT",
+                                      boost::cref(msg),
+                                      remote,
+                                      handler));
+    return result.get();
+}
+
+template <typename Message, typename CompletionToken>
+typename boost::asio::async_result<
+    typename boost::asio::handler_type<CompletionToken,
+                                       void(socket::error_code)>::type
+    >::type
+socket::async_write_post(const Message& msg,
+                         const endpoint& remote,
+                         BOOST_ASIO_MOVE_ARG(CompletionToken) token)
+{
+    typedef typename boost::asio::handler_type<CompletionToken,
+                                               void(error_code)>::type
+        handler_type;
+    handler_type handler(BOOST_ASIO_MOVE_CAST(CompletionToken)(token));
+    boost::asio::async_result<handler_type> result(handler);
+
+    get_io_service().post(boost::bind(&socket::do_async_write_custom<Message, handler_type>,
+                                      this,
+                                      "POST",
                                       boost::cref(msg),
                                       remote,
                                       handler));
@@ -277,11 +308,12 @@ socket::async_write_put(const Message& msg,
 }
 
 template <typename Message, typename WriteHandler>
-void socket::do_async_write_put(const Message& msg,
-                                const endpoint& remote,
-                                const WriteHandler& handler)
+void socket::do_async_write_custom(const std::string& method,
+                                   const Message& msg,
+                                   const endpoint& remote,
+                                   const WriteHandler& handler)
 {
-    TRIAL_HTTP_CURL_LOG("do_async_write_put");
+    TRIAL_HTTP_CURL_LOG("do_async_write_custom: " << method);
 
     current.storage.clear();
     current.message = 0;
@@ -294,7 +326,7 @@ void socket::do_async_write_put(const Message& msg,
 
         // Use CURLOPT_CUSTOMREQUEST instead of CURLOPT_UPLOAD to have better
         // control over which HTTP headers are added.
-        ::curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, "PUT");
+        ::curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method.c_str());
         ::curl_easy_setopt(easy, CURLOPT_URL, remote.url().c_str());
         if (!msg.body().empty())
         {
@@ -318,7 +350,12 @@ void socket::do_async_write_put(const Message& msg,
         {
             async_wait_writable(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
         }
-        // FIXME: else
+        else
+        {
+            error_code success;
+            invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
+                           success);
+        }
     }
     else
     {
@@ -478,9 +515,8 @@ inline bool socket::perform()
         {
             current.state = state::done;
             current.code = make_error_code(info->data.result);
-            TRIAL_HTTP_CURL_LOG("perform: " << current.code.message());
+            TRIAL_HTTP_CURL_LOG("perform: " << info->data.result << ", " << current.code.message());
         }
-        // FIXME: else call handler with error
     }
     return keep_running;
 }
@@ -626,13 +662,11 @@ void socket::async_wait_writable(BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
         break;
 
     case state::reading:
+    case state::done:
         {
             error_code success;
             invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler), success);
         }
-        break;
-
-    case state::done:
         break;
     }
 }
@@ -651,6 +685,12 @@ void socket::process_write(const error_code& error,
     else if (perform())
     {
         async_wait_writable(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler));
+    }
+    else
+    {
+        error_code success;
+        invoke_handler(BOOST_ASIO_MOVE_CAST(WriteHandler)(handler),
+                       success);
     }
 }
 
@@ -737,6 +777,7 @@ void socket::invoke_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
             }
         }
     }
+    TRIAL_HTTP_CURL_LOG("invoke_handler: " << code.message());
     using boost::asio::asio_handler_invoke;
     asio_handler_invoke(boost::bind<void>(handler, code), &handler);
 }

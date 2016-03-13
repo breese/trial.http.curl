@@ -33,6 +33,8 @@ public:
     {
         switch (value)
         {
+        case status::success:
+            return "success";
         case status::continue_request:
             return "continue";
         case status::redirect_found:

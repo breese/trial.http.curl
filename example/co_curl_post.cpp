@@ -31,7 +31,7 @@ void upload(boost::asio::io_service& io,
         message.headers().emplace("Content-Type", "application/x-www-form-urlencoded");
         message.body() = body;
     }
-    socket.async_write_put(message, endpoint, yield[error]);
+    socket.async_write_post(message, endpoint, yield[error]);
     if (error)
     {
         std::cout << "error = " << error.message() << std::endl;

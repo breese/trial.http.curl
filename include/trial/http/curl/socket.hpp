@@ -73,6 +73,16 @@ public:
                     const endpoint&,
                     BOOST_ASIO_MOVE_ARG(CompletionToken) token);
 
+    // Send a HTTP POST request.
+    template <typename Message, typename CompletionToken>
+    typename boost::asio::async_result<
+        typename boost::asio::handler_type<CompletionToken,
+                                           void(error_code)>::type
+        >::type
+    async_write_post(const Message&,
+                     const endpoint&,
+                     BOOST_ASIO_MOVE_ARG(CompletionToken) token);
+
     // Receive a HTTP response.
     //
     // The handler is called with:
@@ -104,9 +114,10 @@ private:
     void do_async_write_head(const endpoint&,
                              const WriteHandler& handler);
     template <typename Message, typename WriteHandler>
-    void do_async_write_put(const Message&,
-                            const endpoint&,
-                            const WriteHandler& handler);
+    void do_async_write_custom(const std::string&,
+                               const Message&,
+                               const endpoint&,
+                               const WriteHandler& handler);
     template <typename Message, typename ReadHandler>
     void do_async_read_response(Message&,
                                 const ReadHandler& handler);
