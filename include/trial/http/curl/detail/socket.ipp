@@ -34,7 +34,10 @@ namespace http
 namespace curl
 {
 
-boost::system::error_code make_error_code(CURLcode code)
+namespace detail
+{
+
+inline boost::system::error_code make_error_code(CURLcode code)
 {
     using namespace boost;
     switch (code)
@@ -86,7 +89,8 @@ struct status_code_type
     explicit status_code_type(int value) : value(value) {}
     int value;
 };
-boost::system::error_code make_error_code(status_code_type code)
+
+inline boost::system::error_code make_error_code(status_code_type code)
 {
     switch (code.value)
     {
@@ -128,6 +132,8 @@ boost::system::error_code make_error_code(status_code_type code)
         return error::make_error_code(error::unknown);
     }
 }
+
+} // namespace detail
 
 inline socket::socket(boost::asio::io_service& io)
     : basic_io_object<service_type>(io),
@@ -524,7 +530,7 @@ inline bool socket::perform()
         if (info && (info->msg == CURLMSG_DONE))
         {
             current.state = state::done;
-            current.code = make_error_code(info->data.result);
+            current.code = detail::make_error_code(info->data.result);
             TRIAL_HTTP_CURL_LOG("perform: " << info->data.result << ", " << current.code.message());
         }
     }
@@ -783,7 +789,7 @@ void socket::invoke_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
             CURLcode rc = ::curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &status_code);
             if (rc == CURLE_OK)
             {
-                code = make_error_code(status_code_type(status_code));
+                code = detail::make_error_code(detail::status_code_type(status_code));
             }
         }
     }
