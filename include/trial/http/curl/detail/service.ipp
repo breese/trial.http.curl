@@ -20,10 +20,8 @@ namespace curl
 namespace detail
 {
 
-boost::asio::io_service::id service::id;
-
 inline service::service(boost::asio::io_service& io)
-    : boost::asio::io_service::service(io)
+    : boost::asio::detail::service_base<detail::service>(io)
 {
 }
 

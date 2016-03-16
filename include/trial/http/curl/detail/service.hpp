@@ -24,13 +24,12 @@ class socket;
 namespace detail
 {
 
-class service : public boost::asio::io_service::service
+class service
+    : public boost::asio::detail::service_base<detail::service>
 {
     friend class curl::socket;
 
 public:
-    static boost::asio::io_service::id id;
-
     explicit service(boost::asio::io_service&);
     ~service();
 
