@@ -21,6 +21,7 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/detail/socket_option.hpp>
+#include <boost/chrono/chrono.hpp>
 #include <boost/utility/string_ref.hpp>
 #include <trial/http/curl/endpoint.hpp>
 #include <trial/http/curl/detail/service.hpp>
@@ -151,7 +152,7 @@ private:
     boost::asio::ip::tcp::socket real_socket;
     CURL *easy;
     CURLM *multi;
-    boost::asio::steady_timer timer;
+    boost::asio::basic_waitable_timer<boost::chrono::steady_clock> timer;
 
     struct state
     {
