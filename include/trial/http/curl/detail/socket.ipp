@@ -86,7 +86,7 @@ inline boost::system::error_code make_error_code(CURLcode code)
 
 struct status_code_type
 {
-    explicit status_code_type(int value) : value(value) {}
+    explicit status_code_type(int v) : value(v) {}
     int value;
 };
 
@@ -210,7 +210,7 @@ socket::async_write_get(const endpoint& remote,
                                       this,
                                       "GET",
                                       remote,
-                                      handler));
+                                      BOOST_ASIO_MOVE_CAST(handler_type)(handler)));
 
     return result.get();
 }
@@ -233,7 +233,7 @@ socket::async_write_head(const endpoint& remote,
                                       this,
                                       "HEAD",
                                       remote,
-                                      handler));
+                                      BOOST_ASIO_MOVE_CAST(handler_type)(handler)));
     return result.get();
 }
 
@@ -257,7 +257,7 @@ socket::async_write_put(const Message& msg,
                                       "PUT",
                                       boost::cref(msg),
                                       remote,
-                                      handler));
+                                      BOOST_ASIO_MOVE_CAST(handler_type)(handler)));
     return result.get();
 }
 
@@ -288,7 +288,7 @@ socket::async_write_post(const Message& msg,
 template <typename WriteHandler>
 void socket::do_async_write_custom(const std::string& method,
                                    const endpoint& remote,
-                                   const WriteHandler& handler)
+                                   WriteHandler handler)
 {
     TRIAL_HTTP_CURL_LOG("do_async_write_custom: " << method);
 
@@ -327,7 +327,7 @@ template <typename Message, typename WriteHandler>
 void socket::do_async_write_custom(const std::string& method,
                                    const Message& msg,
                                    const endpoint& remote,
-                                   const WriteHandler& handler)
+                                   WriteHandler handler)
 {
     TRIAL_HTTP_CURL_LOG("do_async_write_custom: " << method);
 
@@ -405,7 +405,7 @@ socket::async_read_response(Message& msg,
 
 template <typename Message, typename ReadHandler>
 void socket::do_async_read_response(Message& msg,
-                                    const ReadHandler& handler)
+                                    ReadHandler handler)
 {
     TRIAL_HTTP_CURL_LOG("do_async_read_response");
 
@@ -433,8 +433,7 @@ void socket::do_async_read_response(Message& msg,
             switch (current.state)
             {
             case state::reading:
-                async_wait_readable(msg,
-                                    BOOST_ASIO_MOVE_CAST(ReadHandler)(handler));
+                async_wait_readable(msg, handler);
                 break;
 
             default:
@@ -478,6 +477,9 @@ inline bool socket::is_open() const
     case state::writing:
         if (!current.storage.body().empty())
             return true;
+    case state::reading:
+    case state::done:
+        break;
     }
     return real_socket.is_open();
 }
@@ -563,7 +565,7 @@ inline std::size_t socket::body(const view_type& view)
 
 template <typename Message, typename ReadHandler>
 void socket::async_wait_readable(Message& msg,
-                                 BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
+                                 ReadHandler handler)
 {
     TRIAL_HTTP_CURL_LOG("async_wait_readable");
 
@@ -599,7 +601,7 @@ void socket::async_wait_readable(Message& msg,
 template <typename Message, typename ReadHandler>
 void socket::process_read(const error_code& error,
                           Message& msg,
-                          BOOST_ASIO_MOVE_ARG(ReadHandler) handler)
+                          ReadHandler handler)
 {
     TRIAL_HTTP_CURL_LOG("async_wait_readable: " << error.message());
 
@@ -654,7 +656,7 @@ void socket::process_read(const error_code& error,
 }
 
 template <typename WriteHandler>
-void socket::async_wait_writable(BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
+void socket::async_wait_writable(WriteHandler handler)
 {
     TRIAL_HTTP_CURL_LOG("async_wait_writable");
 
@@ -689,7 +691,7 @@ void socket::async_wait_writable(BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
 
 template <typename WriteHandler>
 void socket::process_write(const error_code& error,
-                           BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
+                           WriteHandler handler)
 {
     TRIAL_HTTP_CURL_LOG("process_write: " << error.message());
 
@@ -712,7 +714,7 @@ void socket::process_write(const error_code& error,
 
 template <typename WriteHandler>
 void socket::process_expiration(const error_code& error,
-                                BOOST_ASIO_MOVE_ARG(WriteHandler) handler)
+                                WriteHandler handler)
 {
     TRIAL_HTTP_CURL_LOG("process_expiration: " << error.message());
 

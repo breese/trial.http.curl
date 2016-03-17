@@ -111,35 +111,35 @@ private:
     template <typename WriteHandler>
     void do_async_write_custom(const std::string&,
                                const endpoint&,
-                               const WriteHandler& handler);
+                               WriteHandler handler);
     template <typename Message, typename WriteHandler>
     void do_async_write_custom(const std::string&,
                                const Message&,
                                const endpoint&,
-                               const WriteHandler& handler);
+                               WriteHandler handler);
     template <typename Message, typename ReadHandler>
     void do_async_read_response(Message&,
-                                const ReadHandler& handler);
+                                ReadHandler handler);
 
     bool perform();
     void header(const view_type& key, const view_type& value);
     std::size_t body(const view_type&);
 
     template <typename WriteHandler>
-    void async_wait_writable(BOOST_ASIO_MOVE_ARG(WriteHandler) handler);
+    void async_wait_writable(WriteHandler handler);
     template <typename WriteHandler>
     void process_write(const error_code&,
-                       BOOST_ASIO_MOVE_ARG(WriteHandler) handler);
+                       WriteHandler handler);
     template <typename WriteHandler>
     void process_expiration(const error_code&,
-                            BOOST_ASIO_MOVE_ARG(WriteHandler) handler);
+                            WriteHandler handler);
 
     template <typename Message, typename ReadHandler>
-    void async_wait_readable(Message&, BOOST_ASIO_MOVE_ARG(ReadHandler) handler);
+    void async_wait_readable(Message&, ReadHandler handler);
     template <typename Message, typename ReadHandler>
     void process_read(const error_code&,
                       Message&,
-                      BOOST_ASIO_MOVE_ARG(ReadHandler) handler);
+                      ReadHandler handler);
 
     template <typename Handler>
     void post_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
