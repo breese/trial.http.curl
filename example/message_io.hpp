@@ -27,6 +27,7 @@ inline std::ostream& operator << (std::ostream& stream,
     stream.write(reinterpret_cast<const std::ostream::char_type*>(msg.body().data()),
                  msg.body().size());
     stream << "\n";
+    return stream;
 }
 
 #endif // TRIAL_HTTP_CURL_EXAMPLE_MESSAGE_IO_HPP
