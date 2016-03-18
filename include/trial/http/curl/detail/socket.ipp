@@ -432,7 +432,7 @@ void socket::do_async_read_response(Message& msg,
             switch (current.state)
             {
             case state::reading:
-                async_wait_readable(msg, handler);
+                async_wait_readable(handler);
                 break;
 
             default:
@@ -562,9 +562,8 @@ inline std::size_t socket::body(const view_type& view)
     return view.size();
 }
 
-template <typename Message, typename ReadHandler>
-void socket::async_wait_readable(Message& msg,
-                                 ReadHandler handler)
+template <typename ReadHandler>
+void socket::async_wait_readable(ReadHandler handler)
 {
     TRIAL_HTTP_CURL_LOG("async_wait_readable");
 
@@ -581,10 +580,9 @@ void socket::async_wait_readable(Message& msg,
 
     case state::reading:
         real_socket.async_read_some(boost::asio::null_buffers(),
-                                    boost::bind(&socket::process_read<Message, ReadHandler>,
+                                    boost::bind(&socket::process_read<ReadHandler>,
                                                 this,
                                                 _1,
-                                                msg,
                                                 handler));
         break;
 
@@ -597,9 +595,8 @@ void socket::async_wait_readable(Message& msg,
     }
 }
 
-template <typename Message, typename ReadHandler>
+template <typename ReadHandler>
 void socket::process_read(const error_code& error,
-                          Message& msg,
                           ReadHandler handler)
 {
     TRIAL_HTTP_CURL_LOG("async_wait_readable: " << error.message());

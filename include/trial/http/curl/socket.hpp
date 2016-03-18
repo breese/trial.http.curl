@@ -134,11 +134,10 @@ private:
     void process_expiration(const error_code&,
                             WriteHandler handler);
 
-    template <typename Message, typename ReadHandler>
-    void async_wait_readable(Message&, ReadHandler handler);
-    template <typename Message, typename ReadHandler>
+    template <typename ReadHandler>
+    void async_wait_readable(ReadHandler handler);
+    template <typename ReadHandler>
     void process_read(const error_code&,
-                      Message&,
                       ReadHandler handler);
 
     template <typename Handler>
