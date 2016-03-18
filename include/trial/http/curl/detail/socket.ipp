@@ -333,8 +333,6 @@ void socket::do_async_write_custom(const std::string& method,
 
     current.storage.clear();
     current.message = 0;
-    current.position = msg.body().begin();
-    current.ending = msg.body().end();
 
     if (current.state == state::done)
     {

@@ -171,8 +171,6 @@ private:
         curl::message *message;
         curl::message storage;
         struct curl_slist *header;
-        curl::message::body_type::const_iterator position;
-        curl::message::body_type::const_iterator ending;
     } current;
 };
 
