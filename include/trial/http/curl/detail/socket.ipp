@@ -415,7 +415,8 @@ void socket::do_async_read_response(Message& msg,
         current.storage.headers().clear();
         if (!current.storage.body().empty())
         {
-            msg.body() = current.storage.body();
+            msg.body().assign(current.storage.body().begin(),
+                              current.storage.body().end());
             current.storage.body().clear();
             error_code success;
             invoke_handler(BOOST_ASIO_MOVE_CAST(ReadHandler)(handler), success);
