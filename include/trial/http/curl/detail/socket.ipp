@@ -786,17 +786,6 @@ void socket::process_expiration(const error_code& error,
 }
 
 template <typename Handler>
-void socket::post_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
-                          const error_code& error)
-{
-    // Invoke on socket thread
-    get_io_service().post(boost::bind(&socket::invoke_handler<Handler>,
-                                      this,
-                                      handler,
-                                      error));
-}
-
-template <typename Handler>
 void socket::invoke_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
                             const error_code& error)
 {

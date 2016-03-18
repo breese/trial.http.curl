@@ -151,9 +151,6 @@ private:
                       ReadHandler handler);
 
     template <typename Handler>
-    void post_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
-                      const error_code& error);
-    template <typename Handler>
     void invoke_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
                         const error_code& error);
 
