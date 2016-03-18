@@ -17,7 +17,7 @@ set(LIBRARY_OUTPUT_PATH ${TRIAL_HTTP_CURL_BUILD_DIR}/lib)
 set(EXECUTABLE_OUTPUT_PATH ${TRIAL_HTTP_CURL_BUILD_DIR}/bin)
 
 #add_definitions(-Wall -Wextra -Wshadow)
-#add_definitions(-DTRIAL_HTTP_CURL_DEBUG=1)
+add_definitions(-DTRIAL_HTTP_CURL_DEBUG=1)
 #add_definitions(-std=c++11)
 
 ###############################################################################

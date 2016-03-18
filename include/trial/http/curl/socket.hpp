@@ -55,6 +55,16 @@ public:
     async_write_get(const endpoint&,
                     BOOST_ASIO_MOVE_ARG(CompletionToken) token);
 
+    // Send a HTTP GET request with headers.
+    template <typename Message, typename CompletionToken>
+    typename boost::asio::async_result<
+        typename boost::asio::handler_type<CompletionToken,
+                                           void(error_code)>::type
+        >::type
+    async_write_get(const endpoint&,
+                    const Message&,
+                    BOOST_ASIO_MOVE_ARG(CompletionToken) token);
+
     // Send a HTTP HEAD request.
     template <typename CompletionToken>
     typename boost::asio::async_result<

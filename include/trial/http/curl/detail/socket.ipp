@@ -215,6 +215,33 @@ socket::async_write_get(const endpoint& remote,
     return result.get();
 }
 
+template <typename Message, typename CompletionToken>
+typename boost::asio::async_result<
+    typename boost::asio::handler_type<CompletionToken,
+                                       void(socket::error_code)>::type
+    >::type
+socket::async_write_get(const endpoint& remote,
+                        const Message& msg,
+                        BOOST_ASIO_MOVE_ARG(CompletionToken) token)
+{
+    typedef typename boost::asio::handler_type<CompletionToken,
+                                               void(error_code)>::type
+        handler_type;
+    handler_type handler(BOOST_ASIO_MOVE_CAST(CompletionToken)(token));
+    boost::asio::async_result<handler_type> result(handler);
+
+    TRIAL_HTTP_CURL_LOG("async_write_get");
+
+    get_io_service().post(boost::bind(&socket::do_async_write_custom<Message, handler_type>,
+                                      this,
+                                      "GET",
+                                      boost::cref(msg),
+                                      remote,
+                                      BOOST_ASIO_MOVE_CAST(handler_type)(handler)));
+
+    return result.get();
+}
+
 template <typename CompletionToken>
 typename boost::asio::async_result<
     typename boost::asio::handler_type<CompletionToken,
@@ -354,7 +381,7 @@ void socket::do_async_write_custom(const std::string& method,
                  it != msg.headers().end();
                  ++it)
             {
-                std::string line = it->first + ":" + it->second;
+                std::string line = it->first + ": " + it->second;
                 current.header = curl_slist_append(current.header, line.c_str());
             }
             ::curl_easy_setopt(easy, CURLOPT_HTTPHEADER, current.header);
