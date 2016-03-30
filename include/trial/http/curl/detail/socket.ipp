@@ -585,7 +585,7 @@ inline void socket::header(const view_type& key,
 inline std::size_t socket::body(const view_type& view)
 {
     curl::message& buffer = current.message ? *current.message : current.storage;
-    buffer.body().assign(view.begin(), view.end());
+    buffer.body().insert(buffer.body().end(), view.begin(), view.end());
     return view.size();
 }
 

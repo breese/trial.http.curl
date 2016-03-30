@@ -34,6 +34,7 @@ void download(boost::asio::io_service& io,
         trial::http::curl::message message;
         while (socket.is_open())
         {
+            message.clear();
             socket.async_read_response(message, yield[error]);
             if (error)
             {
