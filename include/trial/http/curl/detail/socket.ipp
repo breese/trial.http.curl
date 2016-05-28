@@ -790,7 +790,7 @@ void socket::invoke_handler(BOOST_ASIO_MOVE_ARG(Handler) handler,
                             const error_code& error)
 {
     error_code code = error;
-    if (!error)
+    if ((!error) || (error == boost::asio::error::in_progress))
     {
         if (current.code)
         {
