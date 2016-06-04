@@ -434,7 +434,8 @@ void socket::do_async_read_response(Message& msg,
 {
     TRIAL_HTTP_CURL_LOG("do_async_read_response");
 
-    if (!current.storage.headers().empty())
+    if (!current.storage.headers().empty() ||
+        !current.storage.body().empty())
     {
         TRIAL_HTTP_CURL_LOG("read got data");
         // FIXME: move
