@@ -145,6 +145,7 @@ inline socket::socket(boost::asio::io_service& io)
     current.state = state::done;
     current.message = 0;
     current.header = 0;
+    http_200_aliases = 0;
 
     easy = ::curl_easy_init();
     if (!easy)
@@ -185,9 +186,23 @@ inline socket::~socket()
 
     ::curl_slist_free_all(current.header);
     current.header = 0;
+    ::curl_slist_free_all(http_200_aliases);
+    http_200_aliases = 0;
     ::curl_multi_remove_handle(multi, easy);
     ::curl_multi_cleanup(multi);
     ::curl_easy_cleanup(easy);
+}
+
+inline void socket::add_http_200_aliases(const std::list<std::string>& http200AliasList)
+{
+    if (!http200AliasList.empty())
+    {
+        for (std::list<std::string>::const_iterator it = http200AliasList.begin(); it != http200AliasList.end(); ++it)
+        {
+            http_200_aliases = curl_slist_append(http_200_aliases, (*it).c_str());
+        }
+        ::curl_easy_setopt(easy, CURLOPT_HTTP200ALIASES, http_200_aliases);
+    }
 }
 
 template <typename CompletionToken>
