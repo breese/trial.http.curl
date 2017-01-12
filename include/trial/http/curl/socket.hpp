@@ -14,6 +14,7 @@
 #include <curl/curl.h>
 #include <string>
 #include <map>
+#include <list>
 #include <boost/system/error_code.hpp>
 #include <boost/asio/basic_io_object.hpp>
 #include <boost/asio/socket_base.hpp>
@@ -112,6 +113,8 @@ public:
 
     bool is_open() const;
 
+    inline void add_http_200_aliases(const std::list<std::string>& http200AliasList);
+
 private:
     static curl_socket_t curl_open_callback(void *, curlsocktype, struct curl_sockaddr *);
     static int curl_close_callback(void *, curl_socket_t);
@@ -159,6 +162,7 @@ private:
     CURL *easy;
     CURLM *multi;
     boost::asio::basic_waitable_timer<boost::chrono::steady_clock> timer;
+    struct curl_slist *http_200_aliases;
 
     struct state
     {
